@@ -2,6 +2,7 @@ defmodule Ockam.Hub.Service.Stream.Storage.Kafka do
   @moduledoc """
     Kafka storage backend for ockam stream service
   """
+  @behaviour Ockam.Hub.Service.Stream.Storage
 
   require Logger
 
@@ -15,8 +16,8 @@ defmodule Ockam.Hub.Service.Stream.Storage.Kafka do
     create_kafka_worker(options)
   end
 
-  @spec create_stream(String.t(), options()) :: :ok | {:error, any()}
-  def create_stream(stream_name, options) do
+  @spec init(String.t(), options()) :: :ok | {:error, any()}
+  def init(stream_name, options) do
     request = create_topics_request(stream_name, options)
     worker_name = worker_name(options)
     no_error = topic_error_none(request)
@@ -24,7 +25,7 @@ defmodule Ockam.Hub.Service.Stream.Storage.Kafka do
       %KafkaEx.Protocol.CreateTopics.Response {
         topic_errors: [^no_error]
       } ->
-        :ok
+        {:ok, options}
       other ->
         ## TODO: parse the error
         Logger.error("Create topic error #{inspect(other)}")
@@ -32,11 +33,11 @@ defmodule Ockam.Hub.Service.Stream.Storage.Kafka do
     end
   end
 
-  @spec save(String.t(), binary(), options()) :: {:ok, integer()} | {:error, any()}
+  @spec save(String.t(), binary(), options()) :: {{:ok, integer()} | {:error, any()}, options()}
   def save(stream_name, message, options) do
     request = produce_request(stream_name, message, options)
     worker_name = worker_name(options)
-    case KafkaEx.produce(request, [worker_name: worker_name]) do
+    result = case KafkaEx.produce(request, [worker_name: worker_name]) do
       :ok -> {:ok, 0}
       {:ok, index} -> {:ok, index}
       {:error, err} -> {:error, err}
@@ -44,15 +45,16 @@ defmodule Ockam.Hub.Service.Stream.Storage.Kafka do
         Logger.error("Unexpected result from produce: #{inspect(other)}")
         {:error, {:save_response, other}}
     end
+    {result, options}
   end
 
-  @spec fetch(String.t(), integer(), integer(), options()) :: {:ok, [message()]} | {:error, any()}
+  @spec fetch(String.t(), integer(), integer(), options()) :: {{:ok, [message()]} | {:error, any()}, options()}
   def fetch(stream_name, index, limit, options) do
     topic = topic(stream_name, options)
     partition = partition(stream_name, index, limit, options)
     fetch_options = fetch_options(stream_name, index, limit, options)
 
-    fetch_messages(limit, topic, partition, fetch_options)
+    {fetch_messages(limit, topic, partition, fetch_options), options}
   end
 
   defp fetch_messages(limit, topic, partition, fetch_options, previous \\ []) do
