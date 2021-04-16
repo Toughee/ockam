@@ -1,7 +1,5 @@
 import Config
 
-# this needs a refactor soon.
-
 influx_token =
   with true <- File.exists?("/mnt/secrets/influx/token"),
        {:ok, contents} <- File.read("/mnt/secrets/influx/token"),
@@ -9,11 +7,7 @@ influx_token =
     client_secret
   else
     false ->
-      if File.exists?("/mnt/secrets/influx_token") do
-        String.trim(File.read!("/mnt/secrets/influx_token"))
-      else
-        System.get_env("INFLUXDB_TOKEN")
-      end
+      System.get_env("INFLUXDB_TOKEN")
 
     {:error, :enoent} ->
       System.get_env("INFLUXDB_TOKEN")
@@ -33,28 +27,20 @@ ui_auth_message =
     client_secret
   else
     false ->
-      if File.exists?("/mnt/secrets/auth_message") do
-        String.trim(File.read!("/mnt/secrets/auth_message"))
-      else
-        System.get_env("AUTH_MESSAGE") || "devsecret"
-      end
+      System.get_env("AUTH_MESSAGE") || "devsecret"
 
     {:error, :enoent} ->
       System.get_env("AUTH_MESSAGE") || "devsecret"
   end
 
 ui_auth_host =
-  with true <- File.exists?("/mnt/secrets/auth_host"),
-       {:ok, contents} <- File.read("/mnt/secrets/auth_host"),
+  with true <- File.exists?("/mnt/secrets/auth/host"),
+       {:ok, contents} <- File.read("/mnt/secrets/auth/host"),
        client_secret <- String.trim(contents) do
     client_secret
   else
     false ->
-      if File.exists?("/mnt/secrets/auth_host") do
-        String.trim(File.read!("/mnt/secrets/auth_host"))
-      else
-        System.get_env("AUTH_HOST") || "http://localhost:4001"
-      end
+      System.get_env("AUTH_HOST") || "http://localhost:4001"
 
     {:error, :enoent} ->
       System.get_env("AUTH_HOST") || "http://localhost:4001"
@@ -86,5 +72,5 @@ node_ip =
 
 config :ockam_hub,
   auth_message: ui_auth_message,
-  auth_host: "http://localhost:4001",
+  auth_host: ui_auth_host,
   node_ip: node_ip

@@ -30,7 +30,7 @@ defmodule Ockam.Hub.TelemetryForwarder do
         {"Content-Type", "application/json"}
       ])
     end
-
+    :telemetry.detach(:send_to_ui)
     :telemetry.attach(:send_to_ui, event_name, handler, nil)
   end
 
