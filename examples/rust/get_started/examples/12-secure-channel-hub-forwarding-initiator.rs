@@ -15,15 +15,17 @@ async fn main(mut ctx: Context) -> Result<()> {
         Route::new()
             .append_t(TCP, hub)
             .append(secure_channel_forwarding_address)
-            .append("secure_channel"),
+            .append("secure_channel_listener"),
     )
     .await?;
 
-    let echo_route = Route::new()
-        .append(channel.address())
-        .append("echo_service");
-
-    ctx.send(echo_route, "Hello world!".to_string()).await?;
+    ctx.send(
+        Route::new()
+            .append(channel.address())
+            .append("echo_service"),
+        "Hello world!".to_string(),
+    )
+    .await?;
 
     // Wait to receive a reply and print it.
     let reply = ctx.receive::<String>().await?;

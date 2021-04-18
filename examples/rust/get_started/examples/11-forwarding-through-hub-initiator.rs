@@ -3,7 +3,7 @@ use ockam_transport_tcp::{TcpTransport, TCP};
 
 #[ockam::node]
 async fn main(mut ctx: Context) -> Result<()> {
-    let hub = "Paste the address of the node you created on Ockam Hub here.";
+    let cloud_node = "Paste the address of the node you created on Ockam Hub here.";
     let echo_service_forwarding_address = "Paste the forwarding address of the echo_service here.";
 
     let tcp = TcpTransport::create(&ctx).await?;
